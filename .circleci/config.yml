@@ -55,6 +55,9 @@ workflows:
     - build:
         requires:
         - setup
+    # - cover:
+    #     requires:
+    #     - setup
     # TODO: Deploy only on tagged version.
     # - deploy:
     #     requires:
