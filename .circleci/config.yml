@@ -1,0 +1,69 @@
+version: 2.1
+
+executor:
+  go-alpine:
+    docker:
+    - image: golang:1.11-alpine
+    working_directory: /src/terraform-provider-virtualbox
+
+jobs:
+  setup:
+    executor: go-alpine
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - go-mod-v1-{{ checksum "go.sum" }}
+    - run: go get -v ./...
+    - save_cache:
+        key: go-mod-v1-{{ checksum "go.sum" }}
+        paths:
+        - "/go/pkg/mod"
+    - persist_to_workspace:
+        root: /
+        paths:
+        - src
+        - go/pkg/mod
+
+  test:
+    executor: go-alpine
+    steps:
+    - attach_workspace:
+        at: /
+    - run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+  # We might want to use fan-out approach for building.
+  build:
+    executor: go-alpine
+    steps:
+    - attach_workspace:
+        at: /
+    - run: go get github.com/mitchellh/gox
+    - run: gox -os "freebsd darwin linux windows" -arch "386 amd64"
+    
+  # TODO: Add test coverage
+  # TODO: Add deployment
+
+workflows:
+  version: 2.1
+  build-test-deploy:
+    jobs:
+    - setup
+    - test:
+        requires:
+        - setup
+    - build:
+        requires:
+        - setup
+    # TODO: Deploy only on tagged version.
+    # - deploy:
+    #     requires:
+    #     - build
+    #     - test
+    #     filters:
+    #       tags:
+    #         only: /^v.*/
+    #       branch:
+    #         only: master
+
+    
