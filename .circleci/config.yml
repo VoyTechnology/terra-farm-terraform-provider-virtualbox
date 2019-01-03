@@ -1,6 +1,6 @@
 version: 2.1
 
-executor:
+executors:
   go-alpine:
     docker:
     - image: golang:1.11-alpine
